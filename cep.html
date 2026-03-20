@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de CEP</title>
+    <style>
+        /* Estilização Geral */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        /* Container do Formulário */
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h2 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+
+        /* Grupos de entrada */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1.5px solid #dde0e3;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            outline: none;
+            background-color: #f9f9f9;
+        }
+
+        /* Efeito ao clicar no campo */
+        input:focus {
+            border-color: #007bff;
+            background-color: #fff;
+            box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1);
+        }
+
+        /* Estilo para campos preenchidos automaticamente */
+        input:read-only {
+            color: #555;
+            background-color: #eef2f5;
+            border-color: #e0e0e0;
+            cursor: default;
+        }
+
+        /* Destaque para o campo de CEP */
+        #cep {
+            border-color: #007bff;
+            font-weight: bold;
+            letter-spacing: 1px;
+            background-color: #fff;
+        }
+
+        /* Estilo Especial para o Resultado do Valor */
+        .valor-box {
+            background-color: #e8f5e9; /* Verde bem claro */
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #c8e6c9;
+            margin-top: 20px;
+        }
+
+        .valor-box label {
+            color: #2e7d32;
+        }
+
+        #valor {
+            background-color: transparent;
+            border: none;
+            font-size: 1.2rem;
+            color: #2e7d32;
+            font-weight: 800;
+            padding: 0;
+            margin-top: 5px;
+        }
+
+        #valor:focus {
+            box-shadow: none;
+        }
+
+        /* Botão de Voltar */
+        .btn-voltar {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background-color: #6c757d;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn-voltar:hover {
+            background-color: #5a6268;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Endereço de Entrega</h2>
+        <h3><strong>Digite o CEP do bairro</strong></h3>
+
+        <div class="form-group">
+            <label for="cep">CEP:</label>
+            <input type="text" id="cep" maxlength="9" placeholder="00000-000" onblur="buscarCEP(this.value)">
+        </div>
+
+        <div class="form-group">
+            <label for="rua">Rua:</label>
+            <input type="text" id="rua" readonly>
+        </div>
+
+        <div class="form-group">
+            <label for="bairro">Bairro:</label>
+            <input type="text" id="bairro" readonly>
+        </div>
+
+        <div class="form-group">
+            <label for="cidade">Cidade:</label>
+            <input type="text" id="cidade" readonly>
+        </div>
+
+        <div class="form-group">
+            <label for="uf">Estado (UF):</label>
+            <input type="text" id="uf" readonly>
+        </div>
+
+        <div class="form-group valor-box">
+            <label for="valor">Valor do Frete:</label>
+            <input type="text" id="valor" readonly placeholder="R$ 0,00">
+        </div>
+
+        <a href="index.html" class="btn-voltar">Voltar para a página de compra</a>
+    </div>
+
+    <script>
+        function buscarCEP(cep) {
+            let cepLimpo = cep.replace(/\D/g, '');
+
+            if (cepLimpo.length !== 8) {
+                // Se estiver vazio, não faz nada (para não dar erro ao clicar fora sem digitar)
+                if(cepLimpo.length > 0) alert("Formato de CEP inválido.");
+                return;
+            }
+
+            let url = `https://viacep.com.br/ws/${cepLimpo}/json/`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.erro) {
+                        alert("CEP não encontrado!");
+                        limparFormulario();
+                    } else {
+                        document.getElementById('rua').value = data.logradouro;
+                        document.getElementById('bairro').value = data.bairro;
+                        document.getElementById('cidade').value = data.localidade;
+                        document.getElementById('uf').value = data.uf;
+
+                        calcularValorPorEstado(data.uf);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert("Erro ao buscar o CEP.");
+                });
+        }
+
+        function calcularValorPorEstado(uf) {
+            let valorInput = document.getElementById('valor');
+            let preco;
+
+            switch (uf) {
+                case 'SP': preco = 10.00; break;
+                case 'RJ': preco = 15.50; break;
+                case 'MG': preco = 18.00; break;
+                case 'RS':
+                case 'SC':
+                case 'PR': preco = 25.00; break;
+                default: preco = 45.00; break;
+            }
+
+            valorInput.value = preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function limparFormulario() {
+            document.getElementById('rua').value = "";
+            document.getElementById('bairro').value = "";
+            document.getElementById('cidade').value = "";
+            document.getElementById('uf').value = "";
+            document.getElementById('valor').value = "";
+        }
+    </script>
+
+</body>
+</html>
